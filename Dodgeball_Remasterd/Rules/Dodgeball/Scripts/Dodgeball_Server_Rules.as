@@ -30,10 +30,12 @@ void onPlayerDie( CRules@ this, CPlayer@ victim, CPlayer@ attacker, u8 customDat
 {
 	if(victim !is null)
 	{
-		if(victim.getTeamNum() == 0)
+		if(victim.getTeamNum() == 0){
 			teamBlueAlive += -1;
-		else
+		}
+		else{
 			teamRedAlive += -1;
+		}
 		//TODO make grave for possible respawn!!
 		//victim.set_u32("respawn time",getGameTime() + (15*30));
 		//victim.SyncToPlayer("respawn time",victim);
@@ -128,10 +130,12 @@ void onTick(CRules@ this)
 						newPlayerBlob.setPosition(this.get_Vec2f(player.getTeamNum()+"Spawn"));
 						newPlayerBlob.server_setTeamNum(player.getTeamNum());
 						newPlayerBlob.server_SetPlayer(player);
-						if(player.getTeamNum() == 0)
+						if(player.getTeamNum() == 0){
 							teamBlueAlive += 1;
-						else
+						}
+						else{
 							teamRedAlive += 1;
+						}
 					}			
 				}
 				else if(blob is null && player.hasTag("Revived"))
@@ -212,9 +216,13 @@ void spawnAtSpawn(CRules@ this)
 						newPlayerBlob.server_setTeamNum(player.getTeamNum());
 						newPlayerBlob.server_SetPlayer(player);
 						if(player.getTeamNum() == 0)
+						{
 							teamBlueAlive += 1;
+						}
 						else
+						{
 							teamRedAlive += 1;
+						}
 					}	
 				}		
 			}
@@ -260,10 +268,13 @@ void randomTeam(CPlayer@ player)
 	{
 		int teamnum = XORRandom(2);
 		player.server_setTeamNum(teamnum);
-		if(teamnum == 0)
+		if(teamnum == 0){
 			teamBlueInGame += 1;
+		}
 		else
+		{
 			teamRedInGame += 1;
+		}
 	}
 	else if(teamRedInGame > teamBlueInGame)
 	{

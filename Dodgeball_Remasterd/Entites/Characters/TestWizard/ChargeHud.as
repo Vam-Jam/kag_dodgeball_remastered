@@ -13,7 +13,6 @@ void onRender(CRules@ this)
 	CControls@ controls = player.getControls();
 
 	GUI::DrawText("Charge is : " +blob.get_u16("charge") , controls.getMouseScreenPos() + Vec2f(0,-20), SColor(255,100,100,100));
-
 	
 
 }

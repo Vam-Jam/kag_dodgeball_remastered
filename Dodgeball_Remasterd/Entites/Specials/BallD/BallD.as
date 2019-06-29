@@ -1,18 +1,27 @@
-//BallThatDoesDamage
 #include "Hitters.as";
 #include "ballparticle.as";
 #include "MakeTestParticles.as";
+//Redo of my first dodgeball mod
+//I actually know how to code this time round
 
-//Todo
-//	-Custom settings to select particle trail
-//	-Custom kill particle
-//	-Custom death sound?
+
+
+const u8 ignoreAllTeam = 200; 
+u8 onHitCmd = 0; 
+float mapsize;
 
 void onInit(CBlob@ this)
 {
-	this.getShape().SetRotationsAllowed( true );
-  	this.server_setTeamNum(5);
-  	this.SetMapEdgeFlags( u8(CBlob::map_collide_none) | u8(CBlob::map_collide_nodeath) );
+
+	this.Tag("Ball");
+	this.set_f32("scope_zoom", 0.05f);
+	this.getShape().SetRotationsAllowed(true);
+  	this.server_setTeamNum(ignoreAllTeam);
+  	this.SetMapEdgeFlags( CBlob::map_collide_sides | CBlob::map_collide_bounce);
+
+	onHitCmd = this.addCommandID("ServerHit");
+	CMap@ map = getMap();
+	mapsize = map.tilemapwidth * map.tilesize;
 }
 
 bool canBePickedUp(CBlob@ this, CBlob@ byBlob)
@@ -22,23 +31,51 @@ bool canBePickedUp(CBlob@ this, CBlob@ byBlob)
 
 void onAttach(CBlob@ this, CBlob@ attached, AttachmentPoint@ attachedPoint)
 {
-	if(this.getTeamNum() == 5)
-	{
-		this.server_setTeamNum(attached.getTeamNum());
-		this.getCurrentScript().tickFrequency = 1;
-	}
-	this.setVelocity(Vec2f(0,0));
-	this.setAngleDegrees(0.0f);
-	this.setAngularVelocity(0.0f);
+	this.server_setTeamNum(attached.getTeamNum());
 
+}
+
+bool doesCollideWithBlob( CBlob@ this, CBlob@ blob )
+{
+	//get once
+	u8 teamNum = this.getTeamNum();
+	u8 blobTeamNum = blob.getTeamNum();
+	bool isBall = blob.hasTag("Ball");
+
+	if(isBall)//so balls can hit mid air and on the ground etc
+	{
+		return true;
+	}
+
+	if(teamNum == ignoreAllTeam)
+	{
+		return false;
+	}
+	if(teamNum == blobTeamNum)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+void onChangeTeam( CBlob@ this, const int oldTeam )
+{
+	u8 currentTeam = this.getTeamNum();
+	
+	if(currentTeam != ignoreAllTeam && oldTeam == ignoreAllTeam)
+	{
+		this.setVelocity(Vec2f(0,0));
+		this.setAngleDegrees(0.0f);
+		this.setAngularVelocity(0.0f);
+	}
 }
 
 void onDetach(CBlob@ this, CBlob@ detached, AttachmentPoint@ attachedPoint)
 {
-	if(this.getTeamNum() == 5)
+	if(detached.get_u16("charge") < 1)
 	{
-		this.server_setTeamNum(detached.getTeamNum());
-		this.getCurrentScript().tickFrequency = 1;
+		this.server_setTeamNum(ignoreAllTeam);
 	}
 }
 
@@ -47,68 +84,50 @@ void onTick(CBlob@ this)
 	if(this.isAttached())
 		return;
 
-	CMap@ map = getMap();
-	Vec2f pos = this.getPosition();
-	float rot = this.getAngleDegrees();
-	Vec2f spawnLocation = Vec2f( 399 + XORRandom(2), 20 + XORRandom(70) );
-	Vec2f vel = this.getVelocity();
-	Vec2f velr = getRandomVelocity(120.0f, 1.0f, 255.0f);
-	if (this.isOnMap() && this.isOnGround())
+	if(isServer())
 	{
-		this.server_setTeamNum(5);
-		this.getCurrentScript().tickFrequency = 0;
-	}
-
-	if(vel.x > 0.1f || vel.y > 0.1f || vel.x < -0.1f || vel.y < -0.1f)//recently changed from 
-	{
-		if(this.getTeamNum() == 0)
+		if(this.getPosition().x < 0)
 		{
-			//BallTrailCopy(pos, rot, this.getSprite());
+			Vec2f forceToAdd = Vec2f(0,0) - this.getPosition();
+			print(forceToAdd.x + " a");
+			this.AddForce(Vec2f(forceToAdd.x,0));
 		}
-		if(this.getTeamNum() == 1)
+		else if(this.getPosition().x > mapsize)
 		{
-			//BallTrailRed(pos, rot);
+			this.AddForce(Vec2f(-this.getVelocity().x,0));
 		}
 	}
-	
-	/*if (pos.x < 4.0f
-			|| pos.x > (getMap().tilemapwidth * getMap().tilesize) - 4.0f
-			|| pos.y < -1000.0f
-			|| pos.y > (getMap().tilemapheight * getMap().tilesize) - -4.0f )
-	{
-
-		this.setPosition(spawnLocation);
-		this.server_setTeamNum(5);
-
-	}*/
 }
 
 void onCollision( CBlob@ this, CBlob@ blob, bool solid, Vec2f normal)
 {
-	if(blob !is null && blob.getTeamNum() != this.getTeamNum())
+	if(isServer())
 	{
-		if(this.getTeamNum() == 5)
+		if(blob !is null && blob.getTeamNum() != this.getTeamNum())
 		{
+			if(this.getTeamNum() == ignoreAllTeam)
+			{
+				return;
+			}
+
 			if(blob.hasTag("flesh"))
 			{
-				this.server_Hit(blob, blob.getPosition(), this.getVelocity(), 0.0, Hitters::crush, true);
-				this.server_setTeamNum(5);
-			}
-			if(solid)
-			{
+				//send cmd first so the client will see the other person die as the explosion happens
+				this.SendCommand(onHitCmd);
+				this.server_Hit(blob, blob.getPosition(), this.getVelocity(), 10.0, Hitters::crush, true);	
 			}
 		}
-		else
+	}
+}
+
+void onCommand( CBlob@ this, u8 cmd, CBitStream @params )
+{
+	if(isClient())
+	{
+		if(cmd == onHitCmd)
 		{
-			if(blob.hasTag("flesh"))
-			{
-				this.server_Hit(blob, blob.getPosition(), this.getVelocity(), 10.0, Hitters::crush, true);
-				MakeTestParticles(this.getPosition(), "Explosion.png");
-				this.getSprite().PlaySound("RocketExplosion.ogg");
-			}
-			if(solid)
-			{
-			}
+			MakeTestParticles(this.getPosition(), "Explosion.png");
+			this.getSprite().PlaySound("RocketExplosion.ogg");
 		}
 	}
 }

@@ -22,6 +22,8 @@ void onInit(CBlob@ this)
 	this.getCurrentScript().runFlags |= Script::tick_not_attached;
 	this.getCurrentScript().removeIfTag = "dead";
 	this.set_u16("charge",0);
+
+	this.addCommandID("ShootObj");
 }
 
 
@@ -36,6 +38,11 @@ void onSetPlayer(CBlob@ this, CPlayer@ player)
 void onTick(CBlob@ this)
 {
 	//declearing basic stuff
+
+	if(!this.isMyPlayer())
+	{
+		return;
+	}
 	Vec2f pos = this.getPosition();
 	Vec2f vel = this.getVelocity();
 	CBlob@ attachedBlob = this.getAttachments().getAttachedBlob("PICKUP");
@@ -48,20 +55,35 @@ void onTick(CBlob@ this)
 			if(this.get_u16("charge") < 50)
 			{
 				this.add_u16("charge",1);
-				print((this.get_u16("charge"))+"");
 			}
 		}
 
 		if(this.isKeyJustReleased(key_action1))// when key is closed, FIREEEE
 		{
-			attachedBlob.server_Die();
+			//ShootObj
 
+		}
+	}
+	else
+	{
+		this.set_u16("charge",0);
+	}
+
+}
+
+void onCommand( CBlob@ this, u8 cmd, CBitStream @params )
+{
+	if(isServer())
+	{
+		if(cmd == this.getCommandID("ShootObj"))
+		{/*
+			attachedBlob.server_Die();
 			CBlob@ ball = server_CreateBlobNoInit(attachedBlob.getName());
 			if (ball !is null)
 			{
 				Vec2f ballVel = (this.getAimPos() - pos);
 				ballVel.Normalize();//not sure what this does.. but it 'normalizes' the aiming so i'l keep it
-				ballVel *= this.get_u16("charge")/3.0f;//will change in the future, will change the charge distance
+				ballVel *= this.get_u16("charge")/2.5f;//will change in the future, will change the charge distance
 
 				ball.SetDamageOwnerPlayer(this.getPlayer());
 				ball.Init();
@@ -70,70 +92,9 @@ void onTick(CBlob@ this)
 				ball.server_setTeamNum(this.getTeamNum());
 				ball.setPosition(pos);
 				ball.setVelocity(ballVel);
-			}
-			this.set_u16("charge",0);
+			}*/
 		}
 	}
-
-	//if left mouse key is pressed, + 1 to charge
-
-	/*
-	if(this.isKeyJustReleased(key_action2))// when key is closed, FIREEEE
-	{
-		int x;
-		int y;
-		int bx;
-		int by;
-
-
-		for(int x = y; x <= y - 1; x++);
-		{
-			CoolEffect(pos + (Vec2f(a,a)), vel + Vec2f(a-a,a),SColor(255, 255, 100+ a, 150 + a));
-		}
-		for(int y = x; y <= x; y++)
-		{
-			CoolEffect(pos + (Vec2f(a,a)), vel + Vec2f(a-a,a),SColor(255, 255, 100+ a, 150 + a));
-		}
-
-		CBlob@ metor = server_CreateBlobNoInit("Metor");
-		if (metor !is null)
-		{
-			Vec2f metorVel = (this.getAimPos() - pos);
-			metorVel.Normalize();//not sure what this does.. but it 'normalizes' the aiming so i'l keep it
-			metorVel *= charge/3.0f;//will change in the future, will change the charge distance
-
-			metor.SetDamageOwnerPlayer(this.getPlayer());
-			metor.Init();
-
-			metor.IgnoreCollisionWhileOverlapped(this);
-			metor.server_setTeamNum(this.getTeamNum());
-			metor.setPosition(Vec2f(pos.x, 0));
-			metor.setVelocity(Vec2f(0,0));
-		}
-		charge = 5;
-	}
-
-
-	if(this.isInInventory())
-		return;
-
-	const bool ismyplayer = this.isMyPlayer();
-
-	if(ismyplayer && getHUD().hasMenus())
-	{
-		return;
-	}
-
-	if(ismyplayer)
-	{
-
-		if(this.isKeyJustPressed(key_action3))
-		{
-			CBlob@ carried = this.getCarriedBlob();
-			if(carried is null)
-			{
-				client_SendThrowOrActivateCommand(this);
-			}
-		}
-	}*/
 }
+
+

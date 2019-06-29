@@ -5,6 +5,7 @@
 
 void onInit(CBlob@ this)
 {
+	this.set_f32("scope_zoom", 0.20f);
 	this.getShape().SetRotationsAllowed( true );
     this.server_setTeamNum(5);
     this.SetMapEdgeFlags( u8(CBlob::map_collide_none) | u8(CBlob::map_collide_nodeath) );

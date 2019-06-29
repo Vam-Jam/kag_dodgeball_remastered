@@ -215,3 +215,15 @@ u8 getArrowType(CBlob@ this)
 	}
 	return archer.arrow_type;
 }
+
+bool hasAnyArrows(CBlob@ this)
+{
+	for (uint i = 0; i < ArrowType::count; i++)
+	{
+		if (hasArrows(this, i))
+		{
+			return true;
+		}
+	}
+	return false;
+}
